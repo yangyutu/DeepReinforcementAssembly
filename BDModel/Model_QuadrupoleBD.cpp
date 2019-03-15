@@ -434,7 +434,7 @@ void Model_QuadrupoleBD::calOp() {
     rgmean /= np;
 
     rgmean = sqrt(rgmean);
-    rg = rgmean;
+    rg = rgmean / a;
 
 }
 
