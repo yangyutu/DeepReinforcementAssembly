@@ -36,6 +36,7 @@ struct Model_QuadrupoleBD{
     void createInitialState();
     void setInitialConfigFile(std::string fileName);
     py::array_t<float> getParticleConfig();
+    py::array_t<float> getOrientationInfo();
     py::array_t<float> getInfo();
     
     
@@ -224,7 +225,7 @@ void Model_QuadrupoleBD::runHelper(int nstep, int controlOpt) {
     pfpp = 2.2975 * a;
     fcm = -0.4667;
     DG = 71.428 * a;
-    rmin = 3780;
+    rmin = a*2.85;
     rgdsmin = 22250;
     delrgdsmin = -250;
     distmin = 0;
