@@ -14,11 +14,11 @@ config = []
 
 
 
-idx = np.where((psi6 < 0.5) & (psi6 < 0.8))
-idxSelect = np.random.choice(idx[0], 40)
+idx = np.where((psi6 > 0.6) & (psi6 < 0.8))
+idxSelect = np.random.choice(idx[0], 20)
 config = config + xyzSampleAll[idxSelect].tolist()
 
-idx = np.where((psi6 > 0.2) & (psi6 < 0.5))
+idx = np.where((psi6 > 0.2) & (psi6 < 0.6))
 idxSelect = np.random.choice(idx[0], 40)
 config = config + xyzSampleAll[idxSelect].tolist()
 
