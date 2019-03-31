@@ -9,7 +9,12 @@ psi6 = opSampleAll[:, 1]
 
 
 config = []
-idx = np.where(psi6 < 0.2)
+
+
+
+
+
+idx = np.where((psi6 < 0.5) & (psi6 < 0.8))
 idxSelect = np.random.choice(idx[0], 40)
 config = config + xyzSampleAll[idxSelect].tolist()
 
@@ -17,9 +22,8 @@ idx = np.where((psi6 > 0.2) & (psi6 < 0.5))
 idxSelect = np.random.choice(idx[0], 40)
 config = config + xyzSampleAll[idxSelect].tolist()
 
-
-idx = np.where((psi6 < 0.5) & (psi6 < 0.8))
-idxSelect = np.random.choice(idx[0], 10)
+idx = np.where(psi6 < 0.2)
+idxSelect = np.random.choice(idx[0], 40)
 config = config + xyzSampleAll[idxSelect].tolist()
 
 config = np.array(config)

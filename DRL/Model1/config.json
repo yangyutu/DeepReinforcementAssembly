@@ -1,7 +1,7 @@
 {
-    "BDModelConfigFile": "../iniConfig/nearCrystal/iniConfig_nearCrystal",
+    "BDModelConfigFile": "../iniConfig/general/iniConfig",
     "BDModeloutputFileTag": "trajTrain_seed_",
-    "BDModelConfigFileRange": 20,
+    "BDModelConfigFileRange": 90,
     "BDModelControlStep": 5,
     "BDModelSenorOffset": 25,
     "BDModelSenorMatSize": 50,
