@@ -3,6 +3,6 @@
     "BDModelConfigFileRange": 0,
     "BDModelControlStep": 1,
     "BDModelSenorOffset": 25,
-    "BDModelSenorMatSize": 25,
-    "BDModelSensorPixelSize":2
+    "BDModelSenorMatSize": 50,
+    "BDModelSensorPixelSize":1
 }

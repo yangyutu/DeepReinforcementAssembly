@@ -10,7 +10,7 @@ import numpy as np
 import BDModel.Model_QuadrupoleBD as BDModel
 import random
 import gym
-
+import os
 
 from copy import deepcopy
 import math
@@ -51,12 +51,25 @@ def computeOrienHist(partConfig):
     
 
 class BDQuadModelEnv_v0(gym.Env):
-    def __init__(self, config, randomSeed):
+    N = 300
+    def __init__(self, config, randomSeed = 1):
         self.config = config
-        self.model = BDModel.Model_QuadrupoleBD('trajTest', 0, randomSeed)
+        self.outputFlag = 2
+        if 'BDModelOutputFlag' in self.config:
+            self.outputFlag = self.config['BDModelOutputFlag']
+
+        self.dirName = 'Traj/'
+        if not os.path.exists(self.dirName):
+            os.makedirs(self.dirName)
+
+        self.outputFileTag = 'trajTrain_seed_'
+        if 'BDModeloutputFileTag' in self.config:
+            self.outputFileTag = self.config['BDModeloutputFileTag']
+
+        self.model = BDModel.Model_QuadrupoleBD(self.outputFileTag+str(randomSeed), self.outputFlag, randomSeed)
         self.nbActions = 4
         self.stateDim = 600
-        self.N = 300
+
         self.initConfigFileTag = self.config['BDModelConfigFile']
         self.initConfigFileRange = self.config['BDModelConfigFileRange']
         
@@ -65,46 +78,75 @@ class BDQuadModelEnv_v0(gym.Env):
             self.controlStep = self.config['BDModelControlStep']
         
         self.episodeCount = 0
+
+        self.episodeEndStep = 500
+        if 'BDModelEpisodeEndStep' in self.config:
+            self.episodeEndStep = self.config['BDModelEpisodeEndStep']
         
         # import parameter for vector env
         self.viewer = None
         self.steps_beyond_done = None
-        
+        self.stepCount = 0
+
+        self.infoDict = {'Psi6': 0.0, 'C6': 0.0, 'Rg': 0.0, 'action': 0.0, 'lambda': 0.0, 'reset': False, 'endBeforeDone': False}
+
     def reset(self):
+        self.infoDict['reset'] = True
         self.maxPsi6 = 0.0
+        self.stepCount = 0
         fileCount = self.episodeCount % self.initConfigFileRange
         initFile = self.initConfigFileTag + str(fileCount) + '.txt'
         self.model.setInitialConfigFile(initFile)
         self.model.createInitialState()
         partConfig = self.model.getParticleConfig()
-        
+        partConfig = np.reshape(partConfig, (BDQuadModelEnv_v0.N, 2))
         self.episodeCount += 1
+        info = self.model.getInfo()
+        print('reset info')
+        print(info)
         
         return partConfig
         
     def step(self, action):
-        
+        if self.stepCount == 0:
+            self.infoDict['reset'] = True
+        else:
+            self.infoDict['reset'] = False
+        self.infoDict['endBeforeDone'] = False
         for i in range(self.controlStep):
             self.model.run(action)
-        
-        partConfig = self.model.getParticleConfig()
+            self.stepCount += 1
+
+        self.partConfig = self.model.getParticleConfig()
+        partConfig = np.reshape(self.partConfig, (BDQuadModelEnv_v0.N, 2))
         info = self.model.getInfo()
+        info = {'Psi6':info[0], 'C6':info[1], 'Rg': info[2], 'action': info[3], 'lambda': info[4]}
+        self.infoDict.update(info)
+
         done, reward = self.calReward(info)
-        return partConfig, reward, done, info
+
+
+
+        return partConfig, reward, done, self.infoDict.copy()
     
     def calReward(self, info):
-        psi6 = info[0]
-        
+        psi6 = self.infoDict['Psi6']
+        rg = self.infoDict['Rg']
         done = False
         
-        if psi6 > 0.95:
+        if psi6 > 0.95 and rg < 13.5:
             done = True
-            reward = 5
-        elif self.maxPsi6 < psi6:
-            reward = psi6 - self.maxPsi6            
-            self.maxPsi6 = psi6
+            reward = 1
+#        elif self.maxPsi6 < psi6:
+#            reward = psi6 - self.maxPsi6
+#            self.maxPsi6 = psi6
         else:
-            reward = -0.1
+            reward = 0.0
+
+
+        if self.stepCount > self.episodeEndStep:
+            done = True
+            self.infoDict['endBeforeDone'] = True
                
         return done, reward
         
@@ -117,65 +159,51 @@ class BDQuadModelEnv_v0(gym.Env):
 
 
 class BDQuadModelEnv_v1(BDQuadModelEnv_v0):
+    offSet = 0
+    sensorMatSize = 0
+    sensorPixelSize = 0
+    refConfig = None
+    refHist = None
+
     def __init__(self, config, randomSeed):
+
         super(BDQuadModelEnv_v1, self).__init__(config, randomSeed)
                
-        self.offSet = self.config['BDModelSenorOffset']
-        self.sensorMatSize = self.config['BDModelSenorMatSize']
-        self.sensorPixelSize = self.config['BDModelSensorPixelSize']
+        BDQuadModelEnv_v1.offSet = self.config['BDModelSenorOffset']
+        BDQuadModelEnv_v1.sensorMatSize = self.config['BDModelSenorMatSize']
+        BDQuadModelEnv_v1.sensorPixelSize = self.config['BDModelSensorPixelSize']
         
-        self.refConfig = np.genfromtxt('HCPconfig.txt')
-        self.refHist, _ = computeOrienHist(self.refConfig)
-        self.refHist = self.refHist / self.N
+        BDQuadModelEnv_v1.refConfig = np.genfromtxt('HCPconfig.txt')
+        BDQuadModelEnv_v1.refHist, _ = computeOrienHist(self.refConfig)
+        BDQuadModelEnv_v1.refHist = self.refHist / self.N
               
-    def step(self, action):
-        self.model.run(action)
-        self.partConfig = self.model.getParticleConfig()
-        info = self.model.getInfo()
-        done, reward = self.calReward(info)
-        return deepcopy(self.partConfig), reward, done, info
+
+    @classmethod
+    def getSenorInfo(cls, partConfig):
     
-    def calReward(self, info):
-        psi6 = info[0]
-        
-        done = False
-        
-        if psi6 > 0.95:
-            done = True
-            reward = 5
-        elif self.maxPsi6 < psi6:
-            reward = psi6 - self.maxPsi6            
-            self.maxPsi6 = psi6
-        else:
-            reward = -0.1
-               
-        return done, reward
-    
-    def getSenorInfo(self, partConfig):
-    
-        x = partConfig[:, 0] + self.offSet
-        y = partConfig[:, 1] + self.offSet
+        x = partConfig[:, 0] + BDQuadModelEnv_v1.offSet
+        y = partConfig[:, 1] + BDQuadModelEnv_v1.offSet
         
 
         
-        xIdx = np.floor(x / self.sensorPixelSize).astype(np.int)
-        yIdx = np.floor(y / self.sensorPixelSize).astype(np.int)
+        xIdx = np.floor(x / BDQuadModelEnv_v1.sensorPixelSize).astype(np.int)
+        yIdx = np.floor(y / BDQuadModelEnv_v1.sensorPixelSize).astype(np.int)
 
 
         xIdx[xIdx < 0] = 0
         yIdx[yIdx < 0] = 0
-        xIdx[xIdx >= self.sensorMatSize] = self.sensorMatSize - 1
-        yIdx[yIdx >= self.sensorMatSize] = self.sensorMatSize - 1
-        sensorMat = np.zeros((self.sensorMatSize, self.sensorMatSize), dtype=np.int32)
+        xIdx[xIdx >= BDQuadModelEnv_v1.sensorMatSize] = BDQuadModelEnv_v1.sensorMatSize - 1
+        yIdx[yIdx >= BDQuadModelEnv_v1.sensorMatSize] = BDQuadModelEnv_v1.sensorMatSize - 1
+        sensorMat = np.zeros((BDQuadModelEnv_v1.sensorMatSize, BDQuadModelEnv_v1.sensorMatSize), dtype=np.int32)
         sensorMat[xIdx, yIdx] = 1
         
         return sensorMat
-                
-    def getOrientationHist(self, partConfig):
+    @classmethod
+    def getOrientationHist(cls, partConfig):
 
         hist, _ = computeOrienHist(partConfig)
-        hist = hist / self.N
-        return alginOrienHist(self.refHist, hist)
+        hist = hist / BDQuadModelEnv_v1.N
+        return alginOrienHist(BDQuadModelEnv_v1.refHist, hist)
     
      
 

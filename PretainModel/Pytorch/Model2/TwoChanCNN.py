@@ -153,9 +153,9 @@ oriSensorList = []
 sampleToTrain = 4000
 for i in range(sampleToTrain+6000):
     xy = np.squeeze(XAll[i,:,:])
-    sensorMat = env.getSenorInfo(xy)
+    sensorMat = BDQuadModelEnv_v1.getSenorInfo(xy)
     posSensorList.append(np.expand_dims(sensorMat,0))
-    oriSensorList.append(np.expand_dims(env.getOrientationHist(xy),0))
+    oriSensorList.append(np.expand_dims(BDQuadModelEnv_v1.getOrientationHist(xy),0))
 
 
 

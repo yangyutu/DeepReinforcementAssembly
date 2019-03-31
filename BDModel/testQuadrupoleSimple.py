@@ -17,21 +17,21 @@ BDModel = cppimport.imp("Model_QuadrupoleBD")
 
 model = BDModel.Model_QuadrupoleBD('trajTest', 1, 1)
 
-model.setInitialConfigFile('Startmeshgrid1.txt')
+model.setInitialConfigFile('iniConfig_nearCrystal0.txt')
 
 model.createInitialState()
 
 partConfig = model.getParticleConfig()
 info = model.getInfo()
-
+print(info)
 start_time = timeit.default_timer()
 for i in range(100):
     print(i)
     model.run(3)
    # partConfig = model.getParticleConfig()
-    #info = model.getInfo()
+    info = model.getInfo()
     #print(partConfig)
-    #print(info)
+    print(info)
 
 
 elapsed = timeit.default_timer() - start_time

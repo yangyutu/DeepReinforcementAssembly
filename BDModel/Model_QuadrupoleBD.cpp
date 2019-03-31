@@ -64,7 +64,7 @@ struct Model_QuadrupoleBD{
     int opt, nstep;
     int trajOutputInterval;
     int timeCounter,fileCounter;
-    bool trajOutputFlag;
+    int trajOutputFlag;
     std::ofstream trajOs, opOs;
     std::string filetag;
     double r[np2], psi6, c6, rg, lambda;
@@ -126,7 +126,7 @@ void Model_QuadrupoleBD::Initializer(std::string filetag0){
     L = 287.0;
     kb = 1.380658e-23; // Boltzmann constant
     Dss = 0.264; //average dss
-    
+    rmin = a*2.85;
     for (int i = 0; i < np; i++) {
         nxyz[i][0] = 2 * i;
         nxyz[i][1] = 2 * i + 1;
@@ -139,8 +139,10 @@ void Model_QuadrupoleBD::run(int action) { //run an eqivalent of 1s simulation
     
     if (outputTrajFlag) {
         if (this->timeCounter == 0 || ((this->timeCounter + 1) % trajOutputInterval == 0)) {
-            this->outputTrajectory(this->trajOs);
+
             this->outputOrderParameter(this->opOs);
+            if (outputTrajFlag > 1)
+                this->outputTrajectory(this->trajOs);
         }
     }
     // for BD dynamics, every run will simply run 10000 steps, correspond to 1s
@@ -162,11 +164,16 @@ void Model_QuadrupoleBD::createInitialState() {
     ss << this->fileCounter++;
     
     if (outputTrajFlag) {
-        if (trajOs.is_open()) trajOs.close();
+
         if (opOs.is_open()) opOs.close();
 
-        this->trajOs.open(filetag + "xyz_" + ss.str() + ".dat");
+
         this->opOs.open(filetag + "op" + ss.str() + ".dat");
+        if (outputTrajFlag > 1){
+            if (trajOs.is_open()) trajOs.close();
+            this->trajOs.open(filetag + "xyz_" + ss.str() + ".dat");
+
+         }
     }
     this->timeCounter = 0;
     this->calOp();
@@ -225,7 +232,7 @@ void Model_QuadrupoleBD::runHelper(int nstep, int controlOpt) {
     pfpp = 2.2975 * a;
     fcm = -0.4667;
     DG = 71.428 * a;
-    rmin = a*2.85;
+
     rgdsmin = 22250;
     delrgdsmin = -250;
     distmin = 0;
