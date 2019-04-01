@@ -89,12 +89,15 @@ class BDQuadModelEnv_v0(gym.Env):
         self.stepCount = 0
 
         self.infoDict = {'Psi6': 0.0, 'C6': 0.0, 'Rg': 0.0, 'action': 0.0, 'lambda': 0.0, 'reset': False, 'endBeforeDone': False}
+        self.randomSeed = randomSeed
+        random.seed(self.randomSeed)
 
     def reset(self):
         self.infoDict['reset'] = True
         self.maxPsi6 = 0.0
         self.stepCount = 0
         fileCount = self.episodeCount % self.initConfigFileRange
+        fileCount = random.randint(0, self.initConfigFileRange - 1)
         initFile = self.initConfigFileTag + str(fileCount) + '.txt'
         self.model.setInitialConfigFile(initFile)
         self.model.createInitialState()
