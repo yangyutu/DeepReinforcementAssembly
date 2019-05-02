@@ -15,9 +15,9 @@ BDModel = cppimport.imp("Model_QuadrupoleBD")
 #model = BDModel.Model_QuadrupoleBD('good',1)
 
 
-model = BDModel.Model_QuadrupoleBD('trajTest', 1, 1)
+model = BDModel.Model_QuadrupoleBD('trajTestN60_', 2, 1, 60)
 
-model.setInitialConfigFile('iniConfig_nearCrystal0.txt')
+model.setInitialConfigFile('RandomConfigN300_0.txt')
 
 model.createInitialState()
 

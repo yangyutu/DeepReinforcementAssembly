@@ -58,6 +58,9 @@ class BDQuadModelEnv_v0(gym.Env):
         if 'BDModelOutputFlag' in self.config:
             self.outputFlag = self.config['BDModelOutputFlag']
 
+        self.BDModel_N = self.config['BD_N']
+        BDQuadModelEnv_v0.N = self.BDModel_N
+
         self.dirName = 'Traj/'
         if not os.path.exists(self.dirName):
             os.makedirs(self.dirName)
@@ -66,9 +69,11 @@ class BDQuadModelEnv_v0(gym.Env):
         if 'BDModeloutputFileTag' in self.config:
             self.outputFileTag = self.config['BDModeloutputFileTag']
 
-        self.model = BDModel.Model_QuadrupoleBD(self.outputFileTag+str(randomSeed), self.outputFlag, randomSeed)
+        self.OPThresh = self.config['BDModel_OPThresh']
+
+        self.model = BDModel.Model_QuadrupoleBD(self.outputFileTag+str(randomSeed), self.outputFlag, randomSeed, self.BDModel_N)
         self.nbActions = 4
-        self.stateDim = 600
+        #self.stateDim = 600
 
         self.initConfigFileTag = self.config['BDModelConfigFile']
         self.initConfigFileRange = self.config['BDModelConfigFileRange']
@@ -96,8 +101,10 @@ class BDQuadModelEnv_v0(gym.Env):
         self.infoDict['reset'] = True
         self.maxPsi6 = 0.0
         self.stepCount = 0
-        fileCount = self.episodeCount % self.initConfigFileRange
-        fileCount = random.randint(0, self.initConfigFileRange - 1)
+        if not self.config["BDModelConfigFileRandom"]:
+            fileCount = self.episodeCount % self.initConfigFileRange
+        else:
+            fileCount = random.randint(0, self.initConfigFileRange - 1)
         initFile = self.initConfigFileTag + str(fileCount) + '.txt'
         self.model.setInitialConfigFile(initFile)
         self.model.createInitialState()
@@ -137,7 +144,7 @@ class BDQuadModelEnv_v0(gym.Env):
         rg = self.infoDict['Rg']
         done = False
         
-        if psi6 > 0.95 and rg < 13.5:
+        if psi6 > self.OPThresh[0] and rg < self.OPThresh[1]:
             done = True
             reward = 1
 #        elif self.maxPsi6 < psi6:
@@ -175,8 +182,8 @@ class BDQuadModelEnv_v1(BDQuadModelEnv_v0):
         BDQuadModelEnv_v1.offSet = self.config['BDModelSenorOffset']
         BDQuadModelEnv_v1.sensorMatSize = self.config['BDModelSenorMatSize']
         BDQuadModelEnv_v1.sensorPixelSize = self.config['BDModelSensorPixelSize']
-        
-        BDQuadModelEnv_v1.refConfig = np.genfromtxt('HCPconfig.txt')
+        HCPFile = self.config['HCPFile']
+        BDQuadModelEnv_v1.refConfig = np.genfromtxt(HCPFile)
         BDQuadModelEnv_v1.refHist, _ = computeOrienHist(self.refConfig)
         BDQuadModelEnv_v1.refHist = self.refHist / self.N
               

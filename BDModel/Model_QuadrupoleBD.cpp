@@ -28,22 +28,20 @@ typedef std::vector<double> State;
 struct Model_QuadrupoleBD{
 
     Model_QuadrupoleBD(){}
-    Model_QuadrupoleBD(std::string fileTag, int outputFlag, int randomSeed);
+    Model_QuadrupoleBD(std::string fileTag, int outputFlag, int randomSeed, int N);
     void Initializer(std::string filetag0);
     double callpsi6();
-    ~Model_QuadrupoleBD(){ }
+    ~Model_QuadrupoleBD();
     void run(int action);
     void createInitialState();
     void setInitialConfigFile(std::string fileName);
     py::array_t<float> getParticleConfig();
     py::array_t<float> getOrientationInfo();
     py::array_t<float> getInfo();
-    
-    
-    
 
-    static const int np = 300;
-    static const int np2 = 600;
+
+    int np;
+    int np2;
     const double Os_pressure = 0.02198; 
     int numActions;
     int stateDim;
@@ -67,7 +65,7 @@ struct Model_QuadrupoleBD{
     int trajOutputFlag;
     std::ofstream trajOs, opOs;
     std::string filetag;
-    double r[np2], psi6, c6, rg, lambda;
+    double *r, psi6, c6, rg, lambda;
     double Dss;
     std::string initialConfigFile;
 
@@ -78,9 +76,9 @@ struct Model_QuadrupoleBD{
     void runHelper(int nstep, int opt);
     void buildlist(int);
 
-    int nxyz[np][2];
-    double F[np2],D[np2];
-    double randisp[np2], dsscalcu[np];
+    std::vector<std::vector<int>> nxyz;
+    double *F, *D;
+    double *randisp;
     void forces(int);
     double EMAG(double,double);
     
@@ -99,14 +97,35 @@ struct Model_QuadrupoleBD{
 
 };
 
+Model_QuadrupoleBD::~Model_QuadrupoleBD() {
+    delete r;
+    delete F;
+    delete D;
+    delete randisp;
+}
 
-Model_QuadrupoleBD::Model_QuadrupoleBD(std::string filetag0, int outputFlag, int randomSeed) {
+Model_QuadrupoleBD::Model_QuadrupoleBD(std::string filetag0, int outputFlag, int randomSeed, int N) {
+    np = N;
+    np2 = N*2;
     this->outputTrajFlag = outputFlag;
     this->randomSeed = randomSeed;
     Initializer(filetag0);
 }
 
 void Model_QuadrupoleBD::Initializer(std::string filetag0){
+
+    r = new double[np2];
+    F = new double[np2];
+    D = new double[np2];
+    randisp = new double[np2];
+
+    for (int i = 0; i < np; i++) {
+        nxyz.push_back(std::vector<int>(2,0));
+        nxyz[i][0] = 2 * i;
+        nxyz[i][1] = 2 * i + 1;
+        nlist.push_back(std::vector<int>());
+    }
+
     filetag = filetag0;
     //	we have three low dimensional states psi6, c6, rg
     // nstep 10000 correspond to 1s, every run will run 1s
@@ -127,11 +146,7 @@ void Model_QuadrupoleBD::Initializer(std::string filetag0){
     kb = 1.380658e-23; // Boltzmann constant
     Dss = 0.264; //average dss
     rmin = a*2.85;
-    for (int i = 0; i < np; i++) {
-        nxyz[i][0] = 2 * i;
-        nxyz[i][1] = 2 * i + 1;
-        nlist.push_back(std::vector<int>());
-    }
+
     
 }
 void Model_QuadrupoleBD::run(int action) { //run an eqivalent of 1s simulation
@@ -486,7 +501,7 @@ py::array_t<float> Model_QuadrupoleBD::getInfo(){
 
 PYBIND11_MODULE(Model_QuadrupoleBD, m) {    
     py::class_<Model_QuadrupoleBD>(m, "Model_QuadrupoleBD")
-        .def(py::init<std::string, int, int>())
+        .def(py::init<std::string, int, int, int>())
         .def("setInitialConfigFile", &Model_QuadrupoleBD::setInitialConfigFile)
         .def("createInitialState", &Model_QuadrupoleBD::createInitialState)
     	.def("run", &Model_QuadrupoleBD::run)

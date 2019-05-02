@@ -53,9 +53,12 @@ dist = np.sqrt(config[:,0]**2 + config[:,1]**2)
 
 distSortIdx = np.argsort(dist)
 
-configOut = config[distSortIdx[0:300], :]
+
+N = 60
+
+configOut = config[distSortIdx[0:60], :]
 
 plt.figure(2)
 plt.scatter(configOut[:,0], configOut[:,1])
 
-np.savetxt('HCPconfig.txt', configOut)
+np.savetxt('HCPconfigN60.txt', configOut)

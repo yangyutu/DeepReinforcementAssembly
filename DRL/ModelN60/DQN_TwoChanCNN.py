@@ -163,6 +163,7 @@ policyNet = TwoChanConvNet(50, 72, N_A)
 
 
 if 'loadPretainNet' in config:
+    config['loadPretainNet'] = False
     if config['loadPretainNet']:
         if config['device'] == 'cpu':
             checkpoint = torch.load('net.pt', map_location='cpu')
